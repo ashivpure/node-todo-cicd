@@ -1,0 +1,32 @@
+pipeline {
+    agent {label 'dev-agent'}
+    
+    stages { 
+        stage('Code') {
+           steps{
+                git url: 'https://github.com/ashivpure/node-todo-cicd.git', branch: 'master'
+            }
+        }
+        stage('Build and test') {
+            steps{
+                sh 'docker build . -t ashivpure/node-todo-app:latest'
+                echo "Building and testing"
+            }
+        }
+        stage('login and Push Image') {
+            steps{
+                echo "login and push image"
+                withCredentials([usernamePassword(credentialsId:'dockerHub', passwordVariable:'dockerHubPassword', usernameVariable:'dockerHubUser')]){ 
+                   sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
+                   sh "docker push ashivpure/node-todo-app:latest"
+                }
+            }
+        }
+        stage('deploy') {
+            steps{ 
+                sh 'docker-compose down && docker-compose up -d'
+                echo "Deploying"
+            }
+        }
+    }
+}
